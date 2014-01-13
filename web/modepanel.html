@@ -1,0 +1,184 @@
+<polymer-element name="mode-panel">
+  <template>
+    <style>
+      .panel {
+        padding: 10px;
+      }
+      .head {
+        color: white;
+        background-color: #866;
+        font-size: 20pt;
+        border-radius: 10px 10px 0px 0px;
+        padding: 10px;
+      }
+      .new-head {
+        color: white;
+        background-color: #866;
+        font-size: 20pt;
+        border-radius: 10px;
+        padding: 10px;     
+        margin: 10px;   
+      }
+      .head-button {
+        float: left;
+        vertical-align: middle;
+      }
+      .head-label {
+        margin-left: 30px;
+      }
+      .body {
+        border: 4px solid #866;
+        padding: 5px;
+        font-size: 14pt;
+        line-height: 140%;
+      }
+      .percent {
+        display: inline-block;
+        width: 3em;
+      }
+      .infotext {
+        color: #888;
+      }
+      .sub-settings {
+        overflow: hidden;
+        border-left: 4px solid #888;
+        padding-left: 10px;
+        margin-left: 10px;
+      }
+      .output-box {
+        padding: 10px;
+      }
+      #output {
+        width: 100%;
+      }
+    </style>
+    
+    <div class="samples">
+      Load a sample configuration:
+      <template repeat="{{samp in samples.keys}}">
+        <button on-click="{{loadSample}}" data-sample="{{samp}}">{{samp}}</button>
+      </template>
+    </div>
+    
+    <div class="panel">
+      <div class="head">
+        <div class="head-label">Mode 0</div>
+      </div>
+      <div class="body">
+        <span class="infotext">Mode 0 is always 'off'.</span>
+      </div>
+    </div>
+
+    <template repeat="{{mode in modes | enumerate}}">
+      <div class="panel">
+        <div class="head">
+          <img class="head-button" src="x-20.png" on-click="{{delMode}}" data-modeno="{{mode.index}}">
+          <div class="head-label">Mode {{mode.index + 1}}</div>
+        </div>
+        <div class="body">
+          <div>
+            Light action: 
+            <select value="{{mode.value['action']}}">
+              <option value="On">On</option>
+              <option value="Flash">Flash</option>
+              <option value="Dazzle">Dazzle</option>
+              <option value="Morse">Morse</option>
+              <option value="Unchanged">Unchanged</option>
+            </select>
+          </div>
+
+          <div class="sub-settings">
+            <template if="{{mode.value['action'] != 'Unchanged'}}">
+              <div class="setting">
+                Brightness:
+                <input type="range" min="0" max="100" value="{{mode.value['brightness']}}">
+                <span class="percent">{{mode.value['brightness']}}%</span>
+                <input type="checkbox" checked="{{mode.value['highPower']}}"> High power
+              </div>
+            </template>
+            <template if="{{mode.value['action'] == 'Flash'}}">
+              <div class="setting">
+                Frequency:
+                <input type="number" min="1" max="255" value="{{mode.value['frequency']}}">
+                Hz
+              </div>
+              <div class="setting">
+                Duty cycle:
+                <input type="range" min="0" max="100" value="{{mode.value['dutyCycle']}}">
+                <span class="percent">{{mode.value['dutyCycle']}}%</span>
+              </div>
+            </template>
+            <template if="{{mode.value['action'] == 'Dazzle'}}">
+              <div class="setting">
+                Frequency:
+                <input type="number" min="1" max="255" value="{{mode.value['frequency']}}">
+                Hz
+              </div>
+              <div class="setting">
+                Duty cycle:
+                <input type="range" min="0" max="100" value="{{mode.value['dutyCycle']}}">
+                <span class="percent">{{mode.value['dutyCycle']}}%</span>
+              </div>
+            </template>
+            <template if="{{mode.value['action'] == 'Morse'}}">
+              <div class="setting">
+                Message:
+                <input type="text" maxlength="255" value="{{mode.value['morse']}}">
+              </div>
+              <div class="setting">
+                Speed:
+                <input type="number" min="10" max="255" value="{{mode.value['morseCpm']}}">
+                CPM
+              </div>
+            </template>
+          </div>
+          
+          <template repeat="{{cond in mode.value['conds'] | enumerate}}">
+            <div class="setting">
+              <img src="x-16.png" on-click="{{delCondition}}" data-modeno="{{mode.index}}" data-condno="{{cond.index}}">
+              If
+              <select value="{{cond.value['type']}}">
+                <option value="Push" disabled?="{{false}}">Push</option>
+                <option value="Hold">Hold</option>
+                <option value="Unhold">Unhold</option>
+                <option value="Idle">Idle</option>
+              </select>
+              <template if="{{cond.value['type'] == 'Hold'}}">
+                for
+                <input type="number" min="1" max="255" value="{{cond.value['time']}}">
+                second 
+              </template>
+              <template if="{{cond.value['type'] == 'Idle'}}">
+                for
+                <input type="number" min="1" max="255" value="{{cond.value['time']}}">
+                second
+              </template>
+              then switch to mode
+              <select selectedIndex="{{cond.value['to']}}">
+                <option template repeat="{{modes.length+1 | indGen}}">{{}}</option>
+              </select>
+            </div>
+          </template>
+          
+          <div class="setting">
+            <img src="plus-16.png" on-click="{{addCondition}}" data-modeno="{{mode.index}}">
+            <span class="infotext">New condition</span>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <div class="new-head">
+      <img class="head-button" src="plus-20.png" on-click="{{addMode}}">
+      <div class="head-label">New mode</div>
+    </div> 
+    
+    <div class="output-box">
+      Configuration code:
+      <textarea id="output" rows="4" readonly>{{outputCode}}</textarea>
+    </div>
+    
+  </template>
+  <script type="application/dart" src="modepanel.dart"></script>
+</polymer-element>
+
