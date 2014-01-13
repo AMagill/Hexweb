@@ -5,6 +5,8 @@ import 'samples.dart';
 
 @CustomTag('mode-panel')
 class ModePanel extends PolymerElement {
+  static const version = 1;
+  
   @observable ObservableList modes;
   @observable String outputCode = "";
   var samples = toObservable(sampleConfigurations);
@@ -71,16 +73,24 @@ class ModePanel extends PolymerElement {
   }
   
   String packConfiguration(var conf) {
-    var result = new StringBuffer();
-    
     String intToHex(int val, int chars) {
       String result = val.toRadixString(16);
       while (result.length < chars) 
         result = '0' + result;
       return result;
     }
+
+    var result = new StringBuffer('[');
+    result.write(intToHex(version, 2));
+    result.write(':');
     
+    bool first = true;
     for (var mode in modes) {
+      if (first) 
+        first = false;
+      else
+        result.write(',');
+      
       int brightness = int.parse(mode['brightness']);
       if (mode['highPower']) brightness |= 0x80;
       int frequency  = int.parse(mode['frequency']);
@@ -88,30 +98,30 @@ class ModePanel extends PolymerElement {
       
       switch (mode['action']) {
         case 'On':
-          result.write('o');
+          result.write('O');
           result.write(intToHex(brightness, 2));
           break;
         case 'Flash':
-          result.write('f');
+          result.write('F');
           result.write(intToHex(brightness, 2));
           result.write(intToHex(frequency, 4));
           result.write(intToHex(dutyCycle, 2));
           break;
         case 'Dazzle':
-          result.write('d');
+          result.write('D');
           result.write(intToHex(brightness, 2));
           result.write(intToHex(frequency, 4));
           result.write(intToHex(dutyCycle, 2));
           break;
         case 'Morse':
-          result.write('m');
+          result.write('M');
           result.write(intToHex(brightness, 2));
           result.write(intToHex(mode['morse'].length, 2));
           result.write(mode['morse']);
           result.write(intToHex(int.parse(mode['morseCpm']), 2));
           break;
         case 'Unchanged':
-          result.write('u');
+          result.write('U');
           break;
       }
       
@@ -129,8 +139,8 @@ class ModePanel extends PolymerElement {
             result.write(intToHex(toMode, 2));
             result.write(intToHex(time, 4));
             break;
-          case 'Unhold':
-            result.write('u');
+          case 'Release':
+            result.write('r');
             result.write(intToHex(toMode, 2));
             break;
           case 'Idle':
@@ -140,9 +150,9 @@ class ModePanel extends PolymerElement {
             break;
         }
       }
-      
-      result.write('.');
     }
+    
+    result.write(']');
     
     return result.toString();
   }

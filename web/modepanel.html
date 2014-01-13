@@ -65,7 +65,7 @@
         <div class="head-label">Mode 0</div>
       </div>
       <div class="body">
-        <span class="infotext">Mode 0 is always 'off'.</span>
+        <span class="infotext">Mode 0 is always 'off', and always switches to mode 1 when the button is pushed.</span>
       </div>
     </div>
 
@@ -82,7 +82,7 @@
               <option value="On">On</option>
               <option value="Flash">Flash</option>
               <option value="Dazzle">Dazzle</option>
-              <option value="Morse">Morse</option>
+              <!--option value="Morse">Morse</option-->
               <option value="Unchanged">Unchanged</option>
             </select>
           </div>
@@ -140,7 +140,7 @@
               <select value="{{cond.value['type']}}">
                 <option value="Push" disabled?="{{false}}">Push</option>
                 <option value="Hold">Hold</option>
-                <option value="Unhold">Unhold</option>
+                <option value="Release">Release</option>
                 <option value="Idle">Idle</option>
               </select>
               <template if="{{cond.value['type'] == 'Hold'}}">
