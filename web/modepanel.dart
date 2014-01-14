@@ -24,7 +24,7 @@ class ModePanel extends PolymerElement {
      'highPower': false,
      'action': 'On',
      'dutyCycle': '10',
-     'frequency': '10',
+     'period': '10',
      'morse': 'SOS',
      'morseCpm': '10',
      'conds': [],
@@ -72,6 +72,11 @@ class ModePanel extends PolymerElement {
     }
   }
   
+  String byteToPercent(String byte) {
+    var val = int.parse(byte);
+    return (val * 100 ~/ 128).toString();
+  }
+  
   String packConfiguration(var conf) {
     String intToHex(int val, int chars) {
       String result = val.toRadixString(16);
@@ -93,7 +98,7 @@ class ModePanel extends PolymerElement {
       
       int brightness = int.parse(mode['brightness']);
       if (mode['highPower']) brightness |= 0x80;
-      int frequency  = int.parse(mode['frequency']);
+      int period     = int.parse(mode['period']);
       int dutyCycle  = int.parse(mode['dutyCycle']);
       
       switch (mode['action']) {
@@ -104,13 +109,13 @@ class ModePanel extends PolymerElement {
         case 'Flash':
           result.write('F');
           result.write(intToHex(brightness, 2));
-          result.write(intToHex(frequency, 4));
+          result.write(intToHex(period, 4));
           result.write(intToHex(dutyCycle, 2));
           break;
         case 'Dazzle':
           result.write('D');
           result.write(intToHex(brightness, 2));
-          result.write(intToHex(frequency, 4));
+          result.write(intToHex(period, 4));
           result.write(intToHex(dutyCycle, 2));
           break;
         case 'Morse':

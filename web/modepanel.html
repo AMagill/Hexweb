@@ -91,16 +91,16 @@
             <template if="{{mode.value['action'] != 'Unchanged'}}">
               <div class="setting">
                 Brightness:
-                <input type="range" min="0" max="100" value="{{mode.value['brightness']}}">
-                <span class="percent">{{mode.value['brightness']}}%</span>
+                <input type="range" min="0" max="127" value="{{mode.value['brightness']}}">
+                <span class="percent">{{byteToPercent(mode.value['brightness'])}}%</span>
                 <input type="checkbox" checked="{{mode.value['highPower']}}"> High power
               </div>
             </template>
             <template if="{{mode.value['action'] == 'Flash'}}">
               <div class="setting">
-                Frequency:
-                <input type="number" min="1" max="255" value="{{mode.value['frequency']}}">
-                Hz
+                Period:
+                <input type="number" min="2" max="60000" value="{{mode.value['period']}}">
+                ms
               </div>
               <div class="setting">
                 Duty cycle:
@@ -110,9 +110,9 @@
             </template>
             <template if="{{mode.value['action'] == 'Dazzle'}}">
               <div class="setting">
-                Frequency:
-                <input type="number" min="1" max="255" value="{{mode.value['frequency']}}">
-                Hz
+                Period:
+                <input type="number" min="1" max="10000" value="{{mode.value['period']}}">
+                ms
               </div>
               <div class="setting">
                 Duty cycle:
