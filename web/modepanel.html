@@ -134,12 +134,12 @@
               </select>
               <template if="{{cond.value['type'] == 'Hold'}}">
                 for
-                <input type="number" min="1" max="255" value="{{cond.value['time']}}">
+                <input type="number" min="1" max="60000" value="{{cond.value['time']}}">
                 ms 
               </template>
               <template if="{{cond.value['type'] == 'Idle'}}">
                 for
-                <input type="number" min="1" max="255" value="{{cond.value['time']}}">
+                <input type="number" min="1" max="60000" value="{{cond.value['time']}}">
                 ms
               </template>
               then switch to mode

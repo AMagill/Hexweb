@@ -20,7 +20,7 @@ var tripleClick = [{
   'dutyCycle': '10',
   'period': '10',
   'conds': [{'type':'Push', 'to':2, 'time':'1'},
-            {'type':'Idle', 'to':4, 'time':'1000'}]
+            {'type':'Idle', 'to':4, 'time':'500'}]
 }, {
   'brightness': '127',
   'highPower': false,
@@ -28,7 +28,7 @@ var tripleClick = [{
   'dutyCycle': '10',
   'period': '10',
   'conds': [{'type':'Push', 'to':3, 'time':'1'},
-            {'type':'Idle', 'to':4, 'time':'1000'}]
+            {'type':'Idle', 'to':4, 'time':'500'}]
 }, {
   'brightness': '127',
   'highPower': true,
@@ -36,7 +36,7 @@ var tripleClick = [{
   'dutyCycle': '10',
   'period': '10',
   'conds': [{'type':'Push', 'to':1, 'time':'1'},
-            {'type':'Idle', 'to':4, 'time':'1000'}]
+            {'type':'Idle', 'to':4, 'time':'500'}]
 }, {
   'brightness': '127',
   'highPower': false,
