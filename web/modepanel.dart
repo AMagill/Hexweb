@@ -20,13 +20,11 @@ class ModePanel extends PolymerElement {
   
   void addNewMode() {
     var mode = toObservable({
-     'brightness': '100',
+     'brightness': '127',
      'highPower': false,
      'action': 'On',
      'dutyCycle': '10',
      'period': '10',
-     'morse': 'SOS',
-     'morseCpm': '10',
      'conds': [],
    });
     
@@ -74,7 +72,7 @@ class ModePanel extends PolymerElement {
   
   String byteToPercent(String byte) {
     var val = int.parse(byte);
-    return (val * 100 ~/ 128).toString();
+    return (val * 100 ~/ 127).toString();
   }
   
   String packConfiguration(var conf) {
@@ -118,13 +116,6 @@ class ModePanel extends PolymerElement {
           result.write(intToHex(period, 4));
           result.write(intToHex(dutyCycle, 2));
           break;
-        case 'Morse':
-          result.write('M');
-          result.write(intToHex(brightness, 2));
-          result.write(intToHex(mode['morse'].length, 2));
-          result.write(mode['morse']);
-          result.write(intToHex(int.parse(mode['morseCpm']), 2));
-          break;
         case 'Unchanged':
           result.write('U');
           break;
@@ -152,6 +143,10 @@ class ModePanel extends PolymerElement {
             result.write('i');
             result.write(intToHex(toMode, 2));
             result.write(intToHex(time, 4));
+            break;
+          case 'Tap':
+            result.write('t');
+            result.write(intToHex(toMode, 2));
             break;
         }
       }

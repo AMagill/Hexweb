@@ -82,7 +82,6 @@
               <option value="On">On</option>
               <option value="Flash">Flash</option>
               <option value="Dazzle">Dazzle</option>
-              <!--option value="Morse">Morse</option-->
               <option value="Unchanged">Unchanged</option>
             </select>
           </div>
@@ -104,8 +103,8 @@
               </div>
               <div class="setting">
                 Duty cycle:
-                <input type="range" min="0" max="100" value="{{mode.value['dutyCycle']}}">
-                <span class="percent">{{mode.value['dutyCycle']}}%</span>
+                <input type="range" min="0" max="128" value="{{mode.value['dutyCycle']}}">
+                <span class="percent">{{byteToPercent(mode.value['dutyCycle'])}}%</span>
               </div>
             </template>
             <template if="{{mode.value['action'] == 'Dazzle'}}">
@@ -116,19 +115,8 @@
               </div>
               <div class="setting">
                 Duty cycle:
-                <input type="range" min="0" max="100" value="{{mode.value['dutyCycle']}}">
-                <span class="percent">{{mode.value['dutyCycle']}}%</span>
-              </div>
-            </template>
-            <template if="{{mode.value['action'] == 'Morse'}}">
-              <div class="setting">
-                Message:
-                <input type="text" maxlength="255" value="{{mode.value['morse']}}">
-              </div>
-              <div class="setting">
-                Speed:
-                <input type="number" min="10" max="255" value="{{mode.value['morseCpm']}}">
-                CPM
+                <input type="range" min="0" max="128" value="{{mode.value['dutyCycle']}}">
+                <span class="percent">{{byteToPercent(mode.value['dutyCycle'])}}%</span>
               </div>
             </template>
           </div>
@@ -138,20 +126,21 @@
               <img src="x-16.png" on-click="{{delCondition}}" data-modeno="{{mode.index}}" data-condno="{{cond.index}}">
               If
               <select value="{{cond.value['type']}}">
-                <option value="Push" disabled?="{{false}}">Push</option>
+                <option value="Push">Push</option>
                 <option value="Hold">Hold</option>
                 <option value="Release">Release</option>
                 <option value="Idle">Idle</option>
+                <option value="Tap">Tap</option>
               </select>
               <template if="{{cond.value['type'] == 'Hold'}}">
                 for
                 <input type="number" min="1" max="255" value="{{cond.value['time']}}">
-                second 
+                ms 
               </template>
               <template if="{{cond.value['type'] == 'Idle'}}">
                 for
                 <input type="number" min="1" max="255" value="{{cond.value['time']}}">
-                second
+                ms
               </template>
               then switch to mode
               <select selectedIndex="{{cond.value['to']}}">

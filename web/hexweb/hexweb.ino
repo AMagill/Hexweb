@@ -8,19 +8,21 @@
 
 // Settings
 #define MAX_MODES               32
-#define EEPROM_COUNT            0
-#define EEPROM_MODE(x)          (sizeof(Mode)*(x)+1)
-#define EEPROM_TEXT             EEPROM_MODE(MAX_MODES)
-#define MAX_TEXT                (512 - EEPROM_TEXT)
 #define BUF_SIZE                10
 #define VERSION                 1
 #define OVERTEMP                340
+// Constants
+#define ACC_ADDRESS             0x4C
+#define ACC_REG_TILT            3
+#define ACC_REG_INTS            6
+#define ACC_REG_MODE            7
 // Pin assignments
 #define DPIN_RLED_SW            2
 #define DPIN_GLED               5
 #define DPIN_PWR                8
 #define DPIN_DRV_MODE           9
 #define DPIN_DRV_EN             10
+#define DPIN_ACC_INT            3
 #define APIN_TEMP               0
 #define APIN_CHARGE             3
 
@@ -35,6 +37,9 @@ struct Mode {
   struct {
     byte to;
   } condRel;
+  struct {
+    byte to;
+  } condTap;
   struct {
     byte to;
     word time;
@@ -60,18 +65,40 @@ void setup()
   pinMode(DPIN_GLED,     OUTPUT);
   pinMode(DPIN_DRV_MODE, OUTPUT);
   pinMode(DPIN_DRV_EN,   OUTPUT);
+  pinMode(DPIN_ACC_INT,  INPUT);
   digitalWrite(DPIN_DRV_MODE, LOW);
   digitalWrite(DPIN_DRV_EN,   LOW);
+  digitalWrite(DPIN_ACC_INT,  HIGH);
   
   // Initialize serial busses
   Serial.begin(9600);
   Wire.begin();
   
-  // Initialize 'off' mode configuration
+  // Configure accelerometer
+  byte config[] PROGMEM = {
+    ACC_REG_INTS,  // First register (see next line)
+    0xE4,  // Interrupts: shakes, taps
+    0x00,  // Mode: not enabled yet
+    0x00,  // Sample rate: 120 Hz
+    0x0F,  // Tap threshold
+    0x10   // Tap debounce samples
+  };
+  Wire.beginTransmission(ACC_ADDRESS);
+  Wire.write(config, sizeof(config));
+  Wire.endTransmission();
+
+  // Enable accelerometer
+  byte enable[] PROGMEM = {ACC_REG_MODE, 0x01};  // Mode: active!
+  Wire.beginTransmission(ACC_ADDRESS);
+  Wire.write(enable, sizeof(enable));
+  Wire.endTransmission();
+  
+  // Initialize an immutable 'off' mode configuration
   conf[0].action = 'Z';
   conf[0].bright = 0;
   conf[0].condPush.to = 1;
   conf[0].condRel.to  = 0xFF;
+  conf[0].condTap.to  = 0xFF;
   conf[0].condHold.to = 0xFF;
   conf[0].condIdle.to = 0xFF;
 
@@ -89,9 +116,10 @@ void setup()
     Serial.print(F("Loading default configuration.  "));
     nModes = 1;
     conf[1].action = 'O';
-    conf[1].bright = 100;
+    conf[1].bright = 0x7F;
     conf[1].condPush.to = 0;
     conf[1].condRel.to  = 0xFF;
+    conf[1].condTap.to  = 0xFF;
     conf[1].condHold.to = 0xFF;
     conf[1].condIdle.to = 0xFF;
     writeConfig();
@@ -107,9 +135,7 @@ void loop()
   static byte mode = 0;  // The actual current mode
   static byte led  = 0;  // Mode to use settings from
   static boolean btnDown = false;
-  static unsigned long lastDazzle = 0;
-  static unsigned long lastChange = 0;
-  static unsigned long lastButton = 0;
+  static unsigned long lastDazzle, lastChange, lastButton, lastTemp, lastAccel;
 
   unsigned long time = millis();
   
@@ -118,7 +144,7 @@ void loop()
   {
   case 'F':
   {
-    unsigned long window = (conf[led].period * conf[led].duty) / 100;
+    unsigned long window = (conf[led].period * conf[led].duty) >> 7;
     if (window == 0) window = 1;
     digitalWrite(DPIN_DRV_EN, (time%conf[led].period) < window);
     break;
@@ -130,6 +156,28 @@ void loop()
     break;
   }
   
+  // Check if the accelerometer wants to interrupt
+  boolean tapped = false, shaked = false;
+  if (!digitalRead(DPIN_ACC_INT))
+  {
+    Wire.beginTransmission(ACC_ADDRESS);
+    Wire.write(ACC_REG_TILT);
+    Wire.endTransmission(false);       // End, but do not stop!
+    Wire.requestFrom(ACC_ADDRESS, 1);  // This one stops.
+    byte tilt = Wire.read();
+    
+    if (time-lastAccel > 500)
+    {
+      lastAccel = time;
+  
+      tapped = !!(tilt & 0x20);
+      shaked = !!(tilt & 0x80);
+  
+      if (tapped) Serial.println(F("Tap!"));
+      if (shaked) Serial.println(F("Shake!"));
+    }
+  }
+
   // Check for mode changes
   byte newMode = mode;
   boolean newBtnDown = digitalRead(DPIN_RLED_SW);
@@ -137,6 +185,8 @@ void loop()
     newMode = conf[mode].condPush.to;
   if (conf[mode].condRel.to  != 0xFF && btnDown && !newBtnDown)
     newMode = conf[mode].condRel.to;
+  if (conf[mode].condTap.to  != 0xFF && tapped)
+    newMode = conf[mode].condTap.to;
   if (conf[mode].condHold.to != 0xFF && btnDown && newBtnDown &&
       (time-lastButton) > conf[mode].condHold.time)
     newMode = conf[mode].condHold.to;
@@ -144,6 +194,18 @@ void loop()
       (time-lastChange) > conf[mode].condIdle.time)
     newMode = conf[mode].condIdle.to;
   
+  // Check the temperature sensor
+  if (time-lastTemp > 1000)
+  {
+    lastTemp = time;
+    int temperature = analogRead(APIN_TEMP);
+    if (temperature > OVERTEMP)
+    {
+      Serial.println(F("Overheat shutdown!"));
+      newMode = 0;
+    }
+  }
+
   // Do the mode transitions
   if (newMode != mode)
   {
@@ -190,7 +252,7 @@ boolean readConfig()
 {
   char *pModeBytes = (char*)&conf[1];
 
-  // First check the magic value
+  // First check for the magic value
   if (EEPROM.read(0) != 42)
     return false;  
 
@@ -205,7 +267,7 @@ void writeConfig()
 
   Serial.print(F("Writing to EEPROM..."));
 
-  EEPROM.write(0, 42);  // Magic, indicates EEPROM is initialized for this.
+  EEPROM.write(0, 42);  // Magic, indicates EEPROM is initialized
   EEPROM.write(1, nModes);
   for (int i = 0; i < sizeof(Mode)*nModes; i++)
     EEPROM.write(i+2, pModeBytes[i]);
@@ -224,7 +286,7 @@ void serialEvent()
     }
     else
     {
-      Serial.println(F("Restoring previous configuration."));
+      Serial.println(F("Invalid configuration, restoring previous."));
       readConfig();
     }
   }
@@ -278,6 +340,7 @@ boolean readNewConfiguration()
    *  condition: (push | release | hold | idle)
    *  push:      'p' byte:to
    *  release:   'r' byte:to
+   *  tap:       't' byte:to
    *  hold:      'h' byte:to word:time
    *  idle:      'i' byte:to word:time
    */
@@ -366,6 +429,7 @@ boolean readNewConfiguration()
     // Invalidate conditions in struct
     newMode->condPush.to = 0xFF;
     newMode->condRel.to  = 0xFF;
+    newMode->condTap.to  = 0xFF;
     newMode->condHold.to = 0xFF;
     newMode->condIdle.to = 0xFF;
     
@@ -386,6 +450,12 @@ boolean readNewConfiguration()
         if (!parseHex(buf, 2, &parsed1)) return false;
         if (parsed1 > largestTo) largestTo = parsed1;
         newMode->condRel.to = parsed1;
+        break;
+      case 't':
+        if (!tryRead(buf, 2)) return false;
+        if (!parseHex(buf, 2, &parsed1)) return false;
+        if (parsed1 > largestTo) largestTo = parsed1;
+        newMode->condTap.to = parsed1;
         break;
       case 'h':
         if (!tryRead(buf, 6)) return false;
