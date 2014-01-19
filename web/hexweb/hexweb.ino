@@ -52,6 +52,9 @@ struct Mode {
 
 byte nModes = 0;
 Mode conf[MAX_MODES];
+byte mode = 0;  // The actual current mode
+byte led  = 0;  // Mode to use settings from
+
 
 void setup()
 {
@@ -145,10 +148,17 @@ void setup()
   }
 }
 
+void powerOff()
+{
+  pinMode(DPIN_PWR, OUTPUT);
+  digitalWrite(DPIN_PWR, LOW);
+  digitalWrite(DPIN_DRV_MODE, LOW);
+  analogWrite(DPIN_DRV_EN, LOW);
+  mode = led = 0;
+}
+
 void loop()
 {
-  static byte mode = 0;  // The actual current mode
-  static byte led  = 0;  // Mode to use settings from
   static boolean btnDown = false;
   static unsigned long lastDazzle, lastChange, lastButton, lastTemp, lastAccel;
   
@@ -217,7 +227,15 @@ void loop()
     if (temperature > OVERTEMP)
     {
       Serial.println(F("Overheat shutdown!"));
-      newMode = 0;
+      for (int i = 0; i < 6; i++)
+      {
+        digitalWrite(DPIN_DRV_MODE, LOW);
+        delay(100);
+        digitalWrite(DPIN_DRV_MODE, HIGH);
+        delay(100);
+      }
+      digitalWrite(DPIN_DRV_MODE, LOW);
+      powerOff();
     }
   }
 
@@ -233,11 +251,7 @@ void loop()
     switch (conf[newMode].action)
     {
     case 'Z':  // Off
-      pinMode(DPIN_PWR, OUTPUT);
-      digitalWrite(DPIN_PWR, LOW);
-      digitalWrite(DPIN_DRV_MODE, LOW);
-      analogWrite(DPIN_DRV_EN, LOW);
-      led = newMode;
+      powerOff();
       break;
     case 'O':  // On
     case 'F':  // Flash
@@ -298,6 +312,7 @@ void serialEvent()
     {
       Serial.print(F("That looks like a valid configuration.  "));
       writeConfig();
+      powerOff();  // Back to mode 0
     }
     else
     {
