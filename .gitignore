@@ -2,3 +2,4 @@
 /packages/
 /*.lock
 /.buildlog
+/notes.txt
