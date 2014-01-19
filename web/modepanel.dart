@@ -23,7 +23,7 @@ class ModePanel extends PolymerElement {
      'brightness': '127',
      'highPower': false,
      'action': 'On',
-     'dutyCycle': '10',
+     'dutyCycle': '33',
      'period': '10',
      'conds': [],
    });
