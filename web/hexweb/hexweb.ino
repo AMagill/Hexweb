@@ -70,6 +70,11 @@ void setup()
   digitalWrite(DPIN_DRV_EN,   LOW);
   digitalWrite(DPIN_ACC_INT,  HIGH);
   
+  // Be less verbose if the button is down.  This is a good clue
+  // that we're being powered up without USB and need to handle
+  // that button as quickly as possible.
+  boolean verbose = !digitalRead(DPIN_RLED_SW);
+  
   // Initialize serial busses
   Serial.begin(9600);
   Wire.begin();
@@ -102,18 +107,25 @@ void setup()
   conf[0].condHold.to = 0xFF;
   conf[0].condIdle.to = 0xFF;
 
-  Serial.println(F("Powered up!"));
+  if (verbose)
+    Serial.println(F("Powered up!"));
   
   if (readConfig())
   {  
-    Serial.print(F("Restored configuration with "));
-    Serial.print(nModes);
-    Serial.println(F(" modes."));
+    if (verbose)
+    {
+      Serial.print(F("Restored configuration with "));
+      Serial.print(nModes);
+      Serial.println(F(" modes."));
+    }
   }
   else
   {
-    Serial.println(F("No configuration found in EEPROM."));
-    Serial.print(F("Loading default configuration.  "));
+    if (verbose)
+    {
+      Serial.println(F("No configuration found in EEPROM."));
+      Serial.print(F("Loading default configuration.  "));
+    }
     nModes = 1;
     conf[1].action = 'O';
     conf[1].bright = 0x7F;
@@ -124,10 +136,13 @@ void setup()
     conf[1].condIdle.to = 0xFF;
     writeConfig();
   }
-  
-  Serial.println(F("Configure me at http://OminousHum.com/hexweb/hexweb.html"));
-  Serial.println(F("then paste in a new configuration code here at any time."));
-  Serial.println();
+
+  if (verbose)
+  {
+    Serial.println(F("Configure me at http://OminousHum.com/hexweb/"));
+    Serial.println(F("then paste in a new configuration code here at any time."));
+    Serial.println();
+  }
 }
 
 void loop()
@@ -136,7 +151,7 @@ void loop()
   static byte led  = 0;  // Mode to use settings from
   static boolean btnDown = false;
   static unsigned long lastDazzle, lastChange, lastButton, lastTemp, lastAccel;
-
+  
   unsigned long time = millis();
   
   // Do whatever this mode does
