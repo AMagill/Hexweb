@@ -164,23 +164,7 @@ void loop()
   
   unsigned long time = millis();
   
-  // Do whatever this mode does
-  switch (conf[led].action)
-  {
-  case 'F':
-  {
-    unsigned long window = (conf[led].period * conf[led].duty) >> 7;
-    if (window == 0) window = 1;
-    digitalWrite(DPIN_DRV_EN, (time%conf[led].period) < window);
-    break;
-  }
-  case 'D':
-    if (time-lastDazzle < conf[led].period) break;
-    lastDazzle = time;
-    digitalWrite(DPIN_DRV_EN, random(100) < conf[led].duty);
-    break;
-  }
-  
+    
   // Check if the accelerometer wants to interrupt
   boolean tapped = false, shaked = false;
   if (!digitalRead(DPIN_ACC_INT))
@@ -202,23 +186,22 @@ void loop()
       if (shaked) Serial.println(F("Shake!"));
     }
   }
-
-  // Check for mode changes
-  byte newMode = mode;
-  boolean newBtnDown = digitalRead(DPIN_RLED_SW);
-  if (conf[mode].condPush.to != 0xFF && !btnDown && newBtnDown)
-    newMode = conf[mode].condPush.to;
-  if (conf[mode].condRel.to  != 0xFF && btnDown && !newBtnDown)
-    newMode = conf[mode].condRel.to;
-  if (conf[mode].condTap.to  != 0xFF && tapped)
-    newMode = conf[mode].condTap.to;
-  if (conf[mode].condHold.to != 0xFF && btnDown && newBtnDown &&
-      (time-lastButton) > conf[mode].condHold.time)
-    newMode = conf[mode].condHold.to;
-  if (conf[mode].condIdle.to != 0xFF &&
-      (time-lastChange) > conf[mode].condIdle.time)
-    newMode = conf[mode].condIdle.to;
   
+  // Check the state of the charge controller
+  int chargeState = analogRead(APIN_CHARGE);
+  if (chargeState < 128)  // Low - charging
+  {
+    digitalWrite(DPIN_GLED, (time&0x0100)?LOW:HIGH);
+  }
+  else if (chargeState > 768) // High - charged
+  {
+    digitalWrite(DPIN_GLED, HIGH);
+  }
+  else // Hi-Z - shutdown
+  {
+    digitalWrite(DPIN_GLED, (time&0x03FC)?LOW:HIGH);   
+  }
+
   // Check the temperature sensor
   if (time-lastTemp > 1000)
   {
@@ -239,6 +222,39 @@ void loop()
     }
   }
 
+  // Do whatever this mode does
+  switch (conf[led].action)
+  {
+  case 'F':
+  {
+    unsigned long window = (conf[led].period * conf[led].duty) >> 7;
+    if (window == 0) window = 1;
+    digitalWrite(DPIN_DRV_EN, (time%conf[led].period) < window);
+    break;
+  }
+  case 'D':
+    if (time-lastDazzle < conf[led].period) break;
+    lastDazzle = time;
+    digitalWrite(DPIN_DRV_EN, random(100) < conf[led].duty);
+    break;
+  }
+
+  // Check for mode changes
+  byte newMode = mode;
+  boolean newBtnDown = digitalRead(DPIN_RLED_SW);
+  if (conf[mode].condPush.to != 0xFF && !btnDown && newBtnDown)
+    newMode = conf[mode].condPush.to;
+  if (conf[mode].condRel.to  != 0xFF && btnDown && !newBtnDown)
+    newMode = conf[mode].condRel.to;
+  if (conf[mode].condTap.to  != 0xFF && tapped)
+    newMode = conf[mode].condTap.to;
+  if (conf[mode].condHold.to != 0xFF && btnDown && newBtnDown &&
+      (time-lastButton) > conf[mode].condHold.time)
+    newMode = conf[mode].condHold.to;
+  if (conf[mode].condIdle.to != 0xFF &&
+      (time-lastChange) > conf[mode].condIdle.time)
+    newMode = conf[mode].condIdle.to;
+  
   // Do the mode transitions
   if (newMode != mode)
   {
