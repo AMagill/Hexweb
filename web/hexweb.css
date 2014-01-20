@@ -24,3 +24,22 @@ h1, p {
 li {
   clear: both;
 }
+
+polymer-ui-collapsible {
+  max-width:800px;
+  margin-bottom: 2px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+}
+
+.polymer-ui-collapsible-header {
+  padding: 10px;
+  border-bottom: 1px solid #bcbcbc;
+  font-size: 2em;
+  line-height: 1em;
+  cursor: pointer;
+}
+
+.collapsible-content {
+  padding: 10px;
+}
